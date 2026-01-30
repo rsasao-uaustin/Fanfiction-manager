@@ -1,0 +1,123 @@
+================================================================================
+  FANFICTION MANAGER - INSTALLATION INSTRUCTIONS
+================================================================================
+
+STEP 1: INSTALL PYTHON
+----------------------
+
+Python is required to run this application. If you don't have Python installed:
+
+1. Visit: https://www.python.org/downloads/
+2. Download Python 3.8 or higher (latest version recommended)
+3. Run the installer
+4. IMPORTANT: Check the box "Add Python to PATH" ✅
+5. Click "Install Now"
+6. Wait for installation to complete
+7. Close and reopen your terminal/PowerShell
+
+Alternative: Install from Microsoft Store
+- Open Microsoft Store
+- Search for "Python 3.12"
+- Click Install
+
+For detailed instructions, see: INSTALL_PYTHON.md
+
+
+STEP 2: VERIFY PYTHON IS INSTALLED
+-----------------------------------
+
+Open PowerShell and run:
+    python --version
+
+You should see: Python 3.x.x
+
+If you see an error, Python is not installed or not in PATH.
+See INSTALL_PYTHON.md for help.
+
+
+STEP 3: INSTALL DEPENDENCIES
+-----------------------------
+
+Navigate to the fanfiction-manager folder in PowerShell:
+
+    cd C:\Users\riosa\polaris_ideas_projects\fanfiction-manager
+
+Then run:
+
+    python -m pip install -r requirements.txt
+
+This will install:
+- Flask (web framework)
+- flask-cors (cross-origin support)
+- language-tool-python (grammar checking)
+
+Note: Use "python -m pip" instead of just "pip" - this works even if pip 
+isn't in your PATH.
+
+
+STEP 4: START THE APPLICATION
+------------------------------
+
+Option A - Use the start script:
+    .\start.bat
+
+Option B - Manual start:
+    cd backend
+    python app.py
+
+Then open your browser to: http://localhost:5000
+
+
+TROUBLESHOOTING
+---------------
+
+Problem: "python is not recognized"
+Solution: 
+- Make sure Python is installed
+- Check "Add Python to PATH" was selected during installation
+- Restart your terminal
+- Try: py --version (Python launcher)
+
+Problem: "pip is not recognized"
+Solution:
+- Use: python -m pip instead of just pip
+- Or: py -m pip
+
+Problem: Permission errors during installation
+Solution:
+- Use: python -m pip install --user -r requirements.txt
+- This installs to your user directory instead of system-wide
+
+Problem: Port 5000 already in use
+Solution:
+- Close other applications using port 5000
+- Or change the port in backend/app.py (line ~420)
+
+Problem: LanguageTool installation fails
+Solution:
+- The app will use basic grammar checking automatically
+- For full features, ensure Java is installed (LanguageTool requirement)
+
+
+QUICK REFERENCE
+---------------
+
+Install Python:     https://www.python.org/downloads/
+Install dependencies: python -m pip install -r requirements.txt
+Start app:          .\start.bat
+Open browser:       http://localhost:5000
+
+
+NEED HELP?
+----------
+
+See these files for more information:
+- INSTALL_PYTHON.md - Detailed Python installation guide
+- README.md - Complete documentation
+- QUICKSTART.md - Quick start guide after installation
+- FEATURES.md - All available features
+
+
+================================================================================
+Happy writing! 📖✨
+================================================================================

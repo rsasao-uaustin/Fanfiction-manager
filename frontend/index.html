@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fanfiction Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>📖 FicManager</h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-item active" data-view="projects">
+                    <span class="icon">📚</span>
+                    <span>Projects</span>
+                </button>
+                <button class="nav-item" data-view="editor">
+                    <span class="icon">✍️</span>
+                    <span>Editor</span>
+                </button>
+                <button class="nav-item" data-view="characters">
+                    <span class="icon">👥</span>
+                    <span>Characters</span>
+                </button>
+                <button class="nav-item" data-view="plots">
+                    <span class="icon">🧵</span>
+                    <span>Plot Lines</span>
+                </button>
+                <button class="nav-item" data-view="ai-assistant">
+                    <span class="icon">🤖</span>
+                    <span>AI Assistant</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Projects View -->
+            <div class="view" id="projects-view">
+                <div class="view-header">
+                    <h2>Your Projects</h2>
+                    <button class="btn btn-primary" onclick="app.showNewProjectModal()">
+                        + New Project
+                    </button>
+                </div>
+                <div class="projects-grid" id="projects-list">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Editor View -->
+            <div class="view hidden" id="editor-view">
+                <div class="view-header">
+                    <div class="editor-title">
+                        <select id="project-select" onchange="app.loadProjectChapters()">
+                            <option value="">Select a project...</option>
+                        </select>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <select id="chapter-select" onchange="app.loadChapter()">
+                                <option value="">Select a chapter...</option>
+                            </select>
+                            <button class="btn btn-secondary btn-icon" title="Move chapter up" onclick="app.moveChapter(-1)">⬆️</button>
+                            <button class="btn btn-secondary btn-icon" title="Move chapter down" onclick="app.moveChapter(1)">⬇️</button>
+                            <span id="chapter-position" style="color: var(--text-secondary); font-size: 0.9rem; white-space: nowrap;"></span>
+                        </div>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" onclick="app.showNewChapterModal()">
+                            + New Chapter
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.showImportGoogleDocModal()">
+                            📥 Import Google Doc
+                        </button>
+                        <button class="btn btn-primary" onclick="app.saveChapter()">
+                            💾 Save
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.checkGrammar()">
+                            ✓ Check Grammar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="editor-container">
+                    <div class="editor-sidebar">
+                        <div class="editor-stats">
+                            <h3>Statistics</h3>
+                            <div class="stat">
+                                <span class="stat-label">Words:</span>
+                                <span class="stat-value" id="word-count">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Characters:</span>
+                                <span class="stat-value" id="char-count">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Paragraphs:</span>
+                                <span class="stat-value" id="para-count">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grammar-errors" id="grammar-errors">
+                            <h3>Grammar Issues</h3>
+                            <div class="error-list" id="error-list">
+                                <p class="placeholder">Click "Check Grammar" to scan for issues</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-main">
+                        <input type="text" id="chapter-title" class="chapter-title-input" 
+                               placeholder="Chapter Title" onchange="app.updateChapterTitle()">
+                        <div class="editor-toolbar" role="toolbar" aria-label="Formatting toolbar">
+                            <button class="btn btn-secondary btn-toolbar" type="button" onclick="app.formatBold()" title="Bold (Ctrl+B)">
+                                <strong>B</strong>
+                            </button>
+                            <button class="btn btn-secondary btn-toolbar" type="button" onclick="app.formatItalic()" title="Italic (Ctrl+I)">
+                                <em>I</em>
+                            </button>
+                            <button class="btn btn-secondary btn-toolbar" type="button" onclick="app.formatHorizontalLine()" title="Horizontal Line (or type --- quickly)">
+                                ─
+                            </button>
+                            <span class="toolbar-hint">Tip: type <code>---</code> within 1.5s at the start of a line to add a horizontal line.</span>
+                        </div>
+                        <div id="editor-content" class="editor-rich-text" contenteditable="true" 
+                             spellcheck="true"
+                             data-placeholder="Start writing your story..."></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Characters View -->
+            <div class="view hidden" id="characters-view">
+                <div class="view-header">
+                    <h2>Character Management</h2>
+                    <div class="header-controls">
+                        <select id="characters-project-select" onchange="app.loadCharacters()">
+                            <option value="">Select a project...</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="app.showNewCharacterModal()">
+                            + New Character
+                        </button>
+                    </div>
+                </div>
+                <div class="characters-grid" id="characters-list">
+                    <!-- Characters will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Plots View -->
+            <div class="view hidden" id="plots-view">
+                <div class="view-header">
+                    <h2>Plot Lines</h2>
+                    <div class="header-controls">
+                        <select id="plots-project-select" onchange="app.loadPlots()">
+                            <option value="">Select a project...</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="app.showNewPlotModal()">
+                            + New Plot Thread
+                        </button>
+                    </div>
+                </div>
+                <div class="plots-container" id="plots-list">
+                    <!-- Plots will be loaded here -->
+                </div>
+            </div>
+
+            <!-- AI Assistant View -->
+            <div class="view hidden" id="ai-assistant-view">
+                <div class="view-header">
+                    <h2>AI Story Assistant</h2>
+                </div>
+                <div class="ai-container">
+                    <div class="ai-input-section">
+                        <h3>What do you need help with?</h3>
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="ai-project-select">Select Project (for full story analysis):</label>
+                            <select id="ai-project-select" onchange="app.updateAIProjectInfo()">
+                                <option value="">No project selected</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem; background: var(--background); padding: 1rem; border-radius: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="use-full-story" onchange="app.toggleFullStory()">
+                                <span><strong>Analyze Full Story</strong> - Use all chapters from selected project</span>
+                            </label>
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                                When enabled, the AI will read all chapters in your project to provide context-aware suggestions.
+                            </small>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="openai-api-key">OpenAI API Key (optional):</label>
+                            <input type="password" id="openai-api-key" placeholder="sk-..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                                Leave empty to use environment variable OPENAI_API_KEY, or enter your key here. 
+                                <a href="https://platform.openai.com/api-keys" target="_blank">Get API key</a>
+                            </small>
+                        </div>
+                        
+                        <div class="suggestion-types">
+                            <button class="btn btn-secondary" onclick="app.getAISuggestions('plot')">
+                                📈 Plot Ideas
+                            </button>
+                            <button class="btn btn-secondary" onclick="app.getAISuggestions('character')">
+                                👤 Character Development
+                            </button>
+                            <button class="btn btn-secondary" onclick="app.getAISuggestions('dialogue')">
+                                💬 Dialogue Tips
+                            </button>
+                            <button class="btn btn-secondary" onclick="app.getAISuggestions('general')">
+                                ✨ Writing Tips
+                            </button>
+                        </div>
+                        
+                        <div class="context-input">
+                            <label for="ai-context">Additional context (optional):</label>
+                            <textarea id="ai-context" placeholder="Add any specific questions or context about what you'd like help with..."></textarea>
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                                This will be combined with your full story (if enabled) for more targeted suggestions.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-suggestions" id="ai-suggestions">
+                        <h3>Suggestions</h3>
+                        <div class="suggestions-list" id="suggestions-list">
+                            <p class="placeholder">Click a button above to get AI suggestions</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Interface -->
+                    <div class="ai-chat-section" style="margin-top: 2rem; border-top: 2px solid var(--border-color); padding-top: 2rem;">
+                        <h3>Chat with AI Assistant</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                            Ask follow-up questions about your story. After generating suggestions above, you can ask questions about the analysis here. The AI will remember your conversation and story context.
+                        </p>
+                        
+                        <div id="chat-messages" style="height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background: var(--surface);">
+                            <p class="placeholder" id="chat-placeholder">Start a conversation by asking a question about your story...</p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="chat-input" placeholder="Ask a question about your story..." 
+                                   style="flex: 1; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;"
+                                   onkeypress="if(event.key === 'Enter') app.sendChatMessage()">
+                            <button class="btn btn-primary" onclick="app.sendChatMessage()">Send</button>
+                            <button class="btn btn-secondary" onclick="app.clearChat()" title="Clear conversation">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal hidden" id="project-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Project</h2>
+                <button class="close-btn" onclick="app.closeModal('project-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="project-title">Title</label>
+                    <input type="text" id="project-title" placeholder="Enter project title">
+                </div>
+                <div class="form-group">
+                    <label for="project-description">Description</label>
+                    <textarea id="project-description" placeholder="Brief description of your story"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="app.closeModal('project-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="app.createProject()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="chapter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Chapter</h2>
+                <button class="close-btn" onclick="app.closeModal('chapter-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="new-chapter-title">Chapter Title</label>
+                    <input type="text" id="new-chapter-title" placeholder="Enter chapter title">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="app.closeModal('chapter-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="app.createChapter()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="character-modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="character-modal-title">New Character</h2>
+                <button class="close-btn" onclick="app.closeModal('character-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="character-name">Name</label>
+                    <input type="text" id="character-name" placeholder="Character name">
+                </div>
+                <div class="form-group">
+                    <label for="character-role">Role</label>
+                    <select id="character-role">
+                        <option value="Protagonist">Protagonist</option>
+                        <option value="Antagonist">Antagonist</option>
+                        <option value="Supporting">Supporting</option>
+                        <option value="Minor">Minor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="character-description">Description</label>
+                    <textarea id="character-description" placeholder="Physical appearance, personality, background..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="character-arc">Character Arc</label>
+                    <textarea id="character-arc" placeholder="How does this character change throughout the story?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="character-traits">Key Traits (comma-separated)</label>
+                    <input type="text" id="character-traits" placeholder="e.g., brave, impulsive, loyal">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="app.closeModal('character-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="app.saveCharacter()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="plot-modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="plot-modal-title">New Plot Thread</h2>
+                <button class="close-btn" onclick="app.closeModal('plot-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="plot-title">Title</label>
+                    <input type="text" id="plot-title" placeholder="Plot thread title">
+                </div>
+                <div class="form-group">
+                    <label for="plot-type">Type</label>
+                    <select id="plot-type">
+                        <option value="main">Main Plot</option>
+                        <option value="subplot">Subplot</option>
+                        <option value="character">Character Arc</option>
+                        <option value="mystery">Mystery/Question</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="plot-status">Status</label>
+                    <select id="plot-status">
+                        <option value="planned">Planned</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="plot-description">Description</label>
+                    <textarea id="plot-description" placeholder="Describe this plot thread..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="plot-notes">Notes</label>
+                    <textarea id="plot-notes" placeholder="Additional notes, foreshadowing, resolution ideas..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="app.closeModal('plot-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="app.savePlot()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="import-google-doc-modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Import from Google Docs</h2>
+                <button class="close-btn" onclick="app.closeModal('import-google-doc-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="google-doc-url">Google Docs URL</label>
+                    <input type="text" id="google-doc-url" placeholder="https://docs.google.com/document/d/DOCUMENT_ID/edit">
+                    <small style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; display: block;">
+                        Paste the full URL of your Google Document. Make sure the document is shared with "Anyone with the link can view" or you're authenticated.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="google-access-token">Access Token (Optional)</label>
+                    <input type="text" id="google-access-token" placeholder="Leave empty for public documents">
+                    <small style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; display: block;">
+                        For private documents, you'll need a Google OAuth access token. See instructions below.
+                    </small>
+                </div>
+                <div class="form-group" style="background: var(--background); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
+                    <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem;">How to get an Access Token:</h4>
+                    <ol style="margin-left: 1.5rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                        <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a></li>
+                        <li>Create a project and enable Google Docs API</li>
+                        <li>Create OAuth 2.0 credentials</li>
+                        <li>Use the OAuth playground to get an access token</li>
+                        <li>Or use the simplified method: Share document publicly and leave token empty</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="app.closeModal('import-google-doc-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="app.importGoogleDoc()">Import Document</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
