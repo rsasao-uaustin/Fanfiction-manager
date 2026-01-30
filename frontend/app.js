@@ -382,19 +382,33 @@ const app = {
     
     async updateAIProjectInfo() {
         const projectId = document.getElementById('ai-project-select').value;
-        const useFullStory = document.getElementById('use-full-story');
+        const analysisModeSection = document.getElementById('ai-analysis-mode-section');
+        const charactersSection = document.getElementById('ai-characters-section');
+        const plotsSection = document.getElementById('ai-plots-section');
+        const chaptersSection = document.getElementById('ai-chapters-section');
         
         if (!projectId) {
-            if (useFullStory) {
-                useFullStory.disabled = true;
-                useFullStory.checked = false;
-            }
+            // Hide all sections
+            if (analysisModeSection) analysisModeSection.style.display = 'none';
+            if (charactersSection) charactersSection.style.display = 'none';
+            if (plotsSection) plotsSection.style.display = 'none';
+            if (chaptersSection) chaptersSection.style.display = 'none';
             return;
         }
         
-        if (useFullStory) {
-            useFullStory.disabled = false;
-        }
+        // Show analysis mode section
+        if (analysisModeSection) analysisModeSection.style.display = 'block';
+        
+        // Load and display characters and plots
+        await this.loadAICharacters(projectId);
+        await this.loadAIPlots(projectId);
+        await this.loadAIChapters(projectId);
+        
+        if (charactersSection) charactersSection.style.display = 'block';
+        if (plotsSection) plotsSection.style.display = 'block';
+        
+        // Update chapter section visibility based on analysis mode
+        this.toggleAnalysisMode();
         
         // Show project info
         try {
@@ -409,6 +423,133 @@ const app = {
         } catch (error) {
             console.error('Error loading project info:', error);
         }
+    },
+    
+    toggleAnalysisMode() {
+        const mode = document.querySelector('input[name="analysis-mode"]:checked')?.value;
+        const chaptersSection = document.getElementById('ai-chapters-section');
+        
+        if (mode === 'chapters') {
+            if (chaptersSection) chaptersSection.style.display = 'block';
+        } else {
+            if (chaptersSection) chaptersSection.style.display = 'none';
+        }
+    },
+    
+    async loadAIChapters(projectId) {
+        try {
+            const response = await fetch(`${API_URL}/projects/${projectId}/chapters`);
+            const chapters = await response.json();
+            this.renderAIChapterCheckboxes(chapters);
+        } catch (error) {
+            console.error('Error loading chapters for AI:', error);
+            const container = document.getElementById('ai-chapters-list');
+            if (container) {
+                container.innerHTML = '<p class="placeholder" style="margin: 0; font-size: 0.9rem; color: var(--error-color);">Error loading chapters</p>';
+            }
+        }
+    },
+    
+    renderAIChapterCheckboxes(chapters) {
+        const container = document.getElementById('ai-chapters-list');
+        if (!container) return;
+        
+        if (!chapters || chapters.length === 0) {
+            container.innerHTML = '<p class="placeholder" style="margin: 0; font-size: 0.9rem;">No chapters found for this project</p>';
+            return;
+        }
+        
+        container.innerHTML = chapters.map((chapter, index) => `
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer;">
+                <input type="checkbox" class="ai-chapter-checkbox" value="${chapter.id}" data-chapter-id="${chapter.id}">
+                <span style="flex: 1;">
+                    <strong>Chapter ${index + 1}: ${this.escapeHtml(chapter.title || 'Untitled')}</strong>
+                </span>
+            </label>
+        `).join('');
+    },
+    
+    getSelectedChapterIds() {
+        const checkboxes = document.querySelectorAll('.ai-chapter-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.getAttribute('data-chapter-id'));
+    },
+    
+    async loadAICharacters(projectId) {
+        try {
+            const response = await fetch(`${API_URL}/projects/${projectId}/characters`);
+            const characters = await response.json();
+            this.renderAICharacterCheckboxes(characters);
+        } catch (error) {
+            console.error('Error loading characters for AI:', error);
+            const container = document.getElementById('ai-characters-list');
+            if (container) {
+                container.innerHTML = '<p class="placeholder" style="margin: 0; font-size: 0.9rem; color: var(--error-color);">Error loading characters</p>';
+            }
+        }
+    },
+    
+    renderAICharacterCheckboxes(characters) {
+        const container = document.getElementById('ai-characters-list');
+        if (!container) return;
+        
+        if (!characters || characters.length === 0) {
+            container.innerHTML = '<p class="placeholder" style="margin: 0; font-size: 0.9rem;">No characters found for this project</p>';
+            return;
+        }
+        
+        container.innerHTML = characters.map(char => `
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer;">
+                <input type="checkbox" class="ai-character-checkbox" value="${char.id}" data-character-id="${char.id}">
+                <span style="flex: 1;">
+                    <strong>${this.escapeHtml(char.name)}</strong>
+                    <span style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 0.5rem;">(${char.role})</span>
+                </span>
+            </label>
+        `).join('');
+    },
+    
+    async loadAIPlots(projectId) {
+        try {
+            const response = await fetch(`${API_URL}/projects/${projectId}/plots`);
+            const plots = await response.json();
+            this.renderAIPlotCheckboxes(plots);
+        } catch (error) {
+            console.error('Error loading plots for AI:', error);
+            const container = document.getElementById('ai-plots-list');
+            if (container) {
+                container.innerHTML = '<p class="placeholder" style="margin: 0; font-size: 0.9rem; color: var(--error-color);">Error loading plot threads</p>';
+            }
+        }
+    },
+    
+    renderAIPlotCheckboxes(plots) {
+        const container = document.getElementById('ai-plots-list');
+        if (!container) return;
+        
+        if (!plots || plots.length === 0) {
+            container.innerHTML = '<p class="placeholder" style="margin: 0; font-size: 0.9rem;">No plot threads found for this project</p>';
+            return;
+        }
+        
+        container.innerHTML = plots.map(plot => `
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer;">
+                <input type="checkbox" class="ai-plot-checkbox" value="${plot.id}" data-plot-id="${plot.id}">
+                <span style="flex: 1;">
+                    <strong>${this.escapeHtml(plot.title)}</strong>
+                    <span style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 0.5rem;">(${plot.type} - ${plot.status})</span>
+                </span>
+            </label>
+        `).join('');
+    },
+    
+    getSelectedCharacterIds() {
+        const checkboxes = document.querySelectorAll('.ai-character-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.getAttribute('data-character-id'));
+    },
+    
+    getSelectedPlotIds() {
+        const checkboxes = document.querySelectorAll('.ai-plot-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.getAttribute('data-plot-id'));
     },
     
     toggleFullStory() {
@@ -1166,26 +1307,41 @@ const app = {
     async getAISuggestions(type) {
         const context = document.getElementById('ai-context').value;
         const projectId = document.getElementById('ai-project-select').value;
-        const useFullStory = document.getElementById('use-full-story').checked;
+        const analysisMode = document.querySelector('input[name="analysis-mode"]:checked')?.value;
         const apiKey = document.getElementById('openai-api-key').value.trim();
         
-        const suggestionsList = document.getElementById('suggestions-list');
-        
-        // Validate full story selection
-        if (useFullStory && !projectId) {
-            this.showNotification('Please select a project to analyze the full story', 'warning');
+        if (!projectId) {
+            this.showNotification('Please select a project first', 'warning');
             return;
         }
         
-        suggestionsList.innerHTML = '<p class="placeholder">Generating suggestions...<br><small>This may take a moment if analyzing full story</small></p>';
+        const useFullStory = analysisMode === 'full';
+        const selectedChapterIds = analysisMode === 'chapters' ? this.getSelectedChapterIds() : null;
+        
+        if (analysisMode === 'chapters' && (!selectedChapterIds || selectedChapterIds.length === 0)) {
+            this.showNotification('Please select at least one chapter to analyze', 'warning');
+            return;
+        }
+        
+        const chatPlaceholder = document.getElementById('chat-placeholder');
+        if (chatPlaceholder) chatPlaceholder.style.display = 'none';
+        
+        // Show loading in chat
+        const loadingId = this.addChatMessage('assistant', 'Analyzing story...', true);
         
         try {
+            const selectedCharacterIds = this.getSelectedCharacterIds();
+            const selectedPlotIds = this.getSelectedPlotIds();
+            
             const requestBody = {
                 type,
                 context,
-                project_id: projectId || null,
+                project_id: projectId,
                 use_full_story: useFullStory,
-                api_key: apiKey || null
+                chapter_ids: selectedChapterIds,
+                api_key: apiKey || null,
+                character_ids: selectedCharacterIds.length > 0 ? selectedCharacterIds : null,
+                plot_ids: selectedPlotIds.length > 0 ? selectedPlotIds : null
             };
             
             const response = await fetch(`${API_URL}/ai-suggest`, {
@@ -1194,7 +1350,16 @@ const app = {
                 body: JSON.stringify(requestBody)
             });
             
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
+            console.log('AI Response data:', data); // Debug log
+            
+            // Remove loading message
+            const loadingEl = document.getElementById(loadingId);
+            if (loadingEl) loadingEl.remove();
             
             if (data.error && data.source === 'template') {
                 // Show error but still display template suggestions
@@ -1202,34 +1367,34 @@ const app = {
             }
             
             if (data.suggestions && data.suggestions.length > 0) {
-                this.renderSuggestions(data.suggestions, data.source);
+                const suggestion = data.suggestions[0];
+                const analysisText = suggestion.title ? `${suggestion.title}\n\n${suggestion.description}` : suggestion.description;
                 
-                // Add the suggestion to chat history so user can ask follow-up questions
-                if (data.source === 'openai') {
-                    const suggestion = data.suggestions[0];
-                    const analysisText = `Analysis: ${suggestion.title}\n\n${suggestion.description}`;
-                    
-                    // Add to chat history
-                    this.chatHistory.push({
-                        'role': 'assistant', 
-                        'content': analysisText
-                    });
-                    
-                    // Also display in chat if it's visible
-                    const chatPlaceholder = document.getElementById('chat-placeholder');
-                    if (chatPlaceholder && chatPlaceholder.style.display !== 'none') {
-                        chatPlaceholder.style.display = 'none';
-                    }
-                    
-                    // Add the analysis to chat display
+                // Add to chat history
+                this.chatHistory.push({
+                    'role': 'assistant', 
+                    'content': analysisText
+                });
+                
+                // Display in chat - verify container exists
+                const messagesContainer = document.getElementById('chat-messages');
+                if (messagesContainer) {
                     this.addChatMessage('assistant', analysisText, false, false, true);
+                } else {
+                    console.error('Chat messages container not found!');
+                    this.showNotification('Error: Chat container not found', 'error');
                 }
             } else {
-                suggestionsList.innerHTML = '<p class="placeholder">No suggestions available</p>';
+                // No suggestions returned
+                console.error('No suggestions in response:', data);
+                const errorMsg = data.error ? `Error: ${data.error}` : 'No suggestions available. Please check your API key and try again.';
+                this.addChatMessage('assistant', errorMsg, false, true);
             }
         } catch (error) {
             console.error('Error getting AI suggestions:', error);
-            suggestionsList.innerHTML = '<p class="placeholder">Error getting suggestions. Check console for details.</p>';
+            const loadingEl = document.getElementById(loadingId);
+            if (loadingEl) loadingEl.remove();
+            this.addChatMessage('assistant', 'Error getting suggestions. Please try again.', false, true);
             this.showNotification('Error getting AI suggestions', 'error');
         }
     },
@@ -1284,13 +1449,16 @@ const app = {
         if (!message) return;
         
         const projectId = document.getElementById('ai-project-select').value;
-        const useFullStory = document.getElementById('use-full-story').checked;
+        const analysisMode = document.querySelector('input[name="analysis-mode"]:checked')?.value;
         const apiKey = document.getElementById('openai-api-key').value.trim();
         
-        if (useFullStory && !projectId) {
-            this.showNotification('Please select a project to chat about your story', 'warning');
+        if (!projectId) {
+            this.showNotification('Please select a project first', 'warning');
             return;
         }
+        
+        const useFullStory = analysisMode === 'full';
+        const selectedChapterIds = analysisMode === 'chapters' ? this.getSelectedChapterIds() : null;
         
         // Clear placeholder
         const placeholder = document.getElementById('chat-placeholder');
@@ -1304,12 +1472,18 @@ const app = {
         const loadingId = this.addChatMessage('assistant', 'Thinking...', true);
         
         try {
+            const selectedCharacterIds = this.getSelectedCharacterIds();
+            const selectedPlotIds = this.getSelectedPlotIds();
+            
             const requestBody = {
                 message: message,
-                project_id: projectId || null,
+                project_id: projectId,
                 use_full_story: useFullStory,
+                chapter_ids: selectedChapterIds,
                 api_key: apiKey || null,
-                conversation_history: this.chatHistory
+                conversation_history: this.chatHistory,
+                character_ids: selectedCharacterIds.length > 0 ? selectedCharacterIds : null,
+                plot_ids: selectedPlotIds.length > 0 ? selectedPlotIds : null
             };
             
             const response = await fetch(`${API_URL}/ai-chat`, {
@@ -1345,7 +1519,16 @@ const app = {
     
     addChatMessage(role, content, isLoading = false, isError = false, isAnalysis = false) {
         const messagesContainer = document.getElementById('chat-messages');
-        if (!messagesContainer) return;
+        if (!messagesContainer) {
+            console.error('Chat messages container not found!');
+            return null;
+        }
+        
+        // Hide placeholder if it exists
+        const placeholder = document.getElementById('chat-placeholder');
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
         
         const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
         const messageDiv = document.createElement('div');

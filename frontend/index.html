@@ -179,19 +179,56 @@
                         <h3>What do you need help with?</h3>
                         
                         <div class="form-group" style="margin-bottom: 1.5rem;">
-                            <label for="ai-project-select">Select Project (for full story analysis):</label>
+                            <label for="ai-project-select">Select Project:</label>
                             <select id="ai-project-select" onchange="app.updateAIProjectInfo()">
                                 <option value="">No project selected</option>
                             </select>
                         </div>
                         
-                        <div class="form-group" style="margin-bottom: 1.5rem; background: var(--background); padding: 1rem; border-radius: 0.5rem;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                <input type="checkbox" id="use-full-story" onchange="app.toggleFullStory()">
-                                <span><strong>Analyze Full Story</strong> - Use all chapters from selected project</span>
-                            </label>
+                        <div class="form-group" id="ai-analysis-mode-section" style="margin-bottom: 1.5rem; background: var(--background); padding: 1rem; border-radius: 0.5rem; display: none;">
+                            <label style="margin-bottom: 0.75rem; display: block; font-weight: 600;">Analysis Mode:</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="analysis-mode" value="full" id="analysis-mode-full" checked onchange="app.toggleAnalysisMode()">
+                                    <span><strong>Full Story</strong> - Analyze all chapters</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="analysis-mode" value="chapters" id="analysis-mode-chapters" onchange="app.toggleAnalysisMode()">
+                                    <span><strong>Specific Chapters</strong> - Select chapters to analyze</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Chapter Selection -->
+                        <div class="form-group" id="ai-chapters-section" style="margin-bottom: 1.5rem; display: none;">
+                            <label style="margin-bottom: 0.5rem; display: block; font-weight: 600;">Select Chapters to Analyze:</label>
+                            <div id="ai-chapters-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; background: var(--surface);">
+                                <p class="placeholder" style="margin: 0; font-size: 0.9rem;">Select a project and choose "Specific Chapters" mode</p>
+                            </div>
                             <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
-                                When enabled, the AI will read all chapters in your project to provide context-aware suggestions.
+                                Select one or more chapters to analyze. The AI will reference these chapters in its responses.
+                            </small>
+                        </div>
+                        
+                        <!-- Character Selection -->
+                        <div class="form-group" id="ai-characters-section" style="margin-bottom: 1.5rem; display: none;">
+                            <label style="margin-bottom: 0.5rem; display: block; font-weight: 600;">Select Characters to Reference (optional):</label>
+                            <div id="ai-characters-list" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; background: var(--surface);">
+                                <p class="placeholder" style="margin: 0; font-size: 0.9rem;">Select a project to see characters</p>
+                            </div>
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                                Select specific characters to focus the AI's analysis on. Leave unchecked to include all characters.
+                            </small>
+                        </div>
+                        
+                        <!-- Plot Thread Selection -->
+                        <div class="form-group" id="ai-plots-section" style="margin-bottom: 1.5rem; display: none;">
+                            <label style="margin-bottom: 0.5rem; display: block; font-weight: 600;">Select Plot Threads to Reference (optional):</label>
+                            <div id="ai-plots-list" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; background: var(--surface);">
+                                <p class="placeholder" style="margin: 0; font-size: 0.9rem;">Select a project to see plot threads</p>
+                            </div>
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                                Select specific plot threads to focus the AI's analysis on. Leave unchecked to include all plot threads.
                             </small>
                         </div>
                         
@@ -204,50 +241,21 @@
                             </small>
                         </div>
                         
-                        <div class="suggestion-types">
-                            <button class="btn btn-secondary" onclick="app.getAISuggestions('plot')">
-                                📈 Plot Ideas
-                            </button>
-                            <button class="btn btn-secondary" onclick="app.getAISuggestions('character')">
-                                👤 Character Development
-                            </button>
-                            <button class="btn btn-secondary" onclick="app.getAISuggestions('dialogue')">
-                                💬 Dialogue Tips
-                            </button>
-                            <button class="btn btn-secondary" onclick="app.getAISuggestions('general')">
-                                ✨ Writing Tips
-                            </button>
-                        </div>
-                        
-                        <div class="context-input">
-                            <label for="ai-context">Additional context (optional):</label>
-                            <textarea id="ai-context" placeholder="Add any specific questions or context about what you'd like help with..."></textarea>
-                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
-                                This will be combined with your full story (if enabled) for more targeted suggestions.
-                            </small>
-                        </div>
                     </div>
                     
-                    <div class="ai-suggestions" id="ai-suggestions">
-                        <h3>Suggestions</h3>
-                        <div class="suggestions-list" id="suggestions-list">
-                            <p class="placeholder">Click a button above to get AI suggestions</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Chat Interface -->
-                    <div class="ai-chat-section" style="margin-top: 2rem; border-top: 2px solid var(--border-color); padding-top: 2rem;">
-                        <h3>Chat with AI Assistant</h3>
+                    <!-- AI Analysis & Chat (Consolidated) -->
+                    <div class="ai-analysis-chat" id="ai-analysis-chat" style="margin-top: 2rem; border-top: 2px solid var(--border-color); padding-top: 2rem;">
+                        <h3>AI Analysis & Chat</h3>
                         <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                            Ask follow-up questions about your story. After generating suggestions above, you can ask questions about the analysis here. The AI will remember your conversation and story context.
+                            Generate analysis or ask questions about your story. The AI will reference your selected project and chapters.
                         </p>
                         
-                        <div id="chat-messages" style="height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background: var(--surface);">
-                            <p class="placeholder" id="chat-placeholder">Start a conversation by asking a question about your story...</p>
+                        <div id="chat-messages" style="height: 500px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background: var(--surface);">
+                            <p class="placeholder" id="chat-placeholder">Click a suggestion button above or ask a question about your story...</p>
                         </div>
                         
                         <div style="display: flex; gap: 0.5rem;">
-                            <input type="text" id="chat-input" placeholder="Ask a question about your story..." 
+                            <input type="text" id="chat-input" placeholder="Ask a question or request analysis..." 
                                    style="flex: 1; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;"
                                    onkeypress="if(event.key === 'Enter') app.sendChatMessage()">
                             <button class="btn btn-primary" onclick="app.sendChatMessage()">Send</button>

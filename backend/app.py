@@ -197,6 +197,17 @@ def delete_project(project_id):
     return jsonify({'success': True})
 
 # Chapter management
+@app.route('/api/projects/<project_id>/chapters', methods=['GET'])
+def get_chapters(project_id):
+    """Get all chapters for a project"""
+    projects = load_json(PROJECTS_FILE)
+    
+    for project in projects:
+        if project['id'] == project_id:
+            return jsonify(project.get('chapters', []))
+    
+    return jsonify({'error': 'Project not found'}), 404
+
 @app.route('/api/projects/<project_id>/chapters', methods=['POST'])
 def add_chapter(project_id):
     data = request.json
@@ -488,6 +499,142 @@ def get_project_full_context(project_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def build_story_context(project_id, character_ids=None, plot_ids=None, chapter_ids=None):
+    """Build story context including chapters, selected characters, and selected plots"""
+    try:
+        projects = load_json(PROJECTS_FILE)
+        project = None
+        for p in projects:
+            if p['id'] == project_id:
+                project = p
+                break
+        
+        if not project:
+            return ''
+        
+        story_parts = []
+        story_parts.append(f"Story Title: {project.get('title', 'Untitled')}\n")
+        if project.get('description'):
+            story_parts.append(f"Description: {project.get('description', '')}\n\n")
+        
+        # Add selected characters if specified
+        if character_ids:
+            characters = load_json(CHARACTERS_FILE).get(project_id, [])
+            selected_characters = [c for c in characters if c.get('id') in character_ids]
+            if selected_characters:
+                story_parts.append("=" * 80 + "\n")
+                story_parts.append("SELECTED CHARACTERS TO FOCUS ON:\n")
+                story_parts.append("=" * 80 + "\n\n")
+                for char in selected_characters:
+                    story_parts.append(f"Character: {char.get('name', 'Unknown')}\n")
+                    story_parts.append(f"Role: {char.get('role', 'Unknown')}\n")
+                    if char.get('description'):
+                        story_parts.append(f"Description: {char.get('description', '')}\n")
+                    if char.get('arc'):
+                        story_parts.append(f"Character Arc: {char.get('arc', '')}\n")
+                    if char.get('traits'):
+                        traits = char.get('traits', [])
+                        if isinstance(traits, list):
+                            story_parts.append(f"Traits: {', '.join(traits)}\n")
+                    story_parts.append("\n")
+                story_parts.append("\n")
+        else:
+            # Include all characters if none selected
+            characters = load_json(CHARACTERS_FILE).get(project_id, [])
+            if characters:
+                story_parts.append("=" * 80 + "\n")
+                story_parts.append("CHARACTERS IN THIS STORY:\n")
+                story_parts.append("=" * 80 + "\n\n")
+                for char in characters:
+                    story_parts.append(f"Character: {char.get('name', 'Unknown')}\n")
+                    story_parts.append(f"Role: {char.get('role', 'Unknown')}\n")
+                    if char.get('description'):
+                        story_parts.append(f"Description: {char.get('description', '')}\n")
+                    if char.get('arc'):
+                        story_parts.append(f"Character Arc: {char.get('arc', '')}\n")
+                    if char.get('traits'):
+                        traits = char.get('traits', [])
+                        if isinstance(traits, list):
+                            story_parts.append(f"Traits: {', '.join(traits)}\n")
+                    story_parts.append("\n")
+                story_parts.append("\n")
+        
+        # Add selected plot threads if specified
+        if plot_ids:
+            plots = load_json(PLOTS_FILE).get(project_id, [])
+            selected_plots = [p for p in plots if p.get('id') in plot_ids]
+            if selected_plots:
+                story_parts.append("=" * 80 + "\n")
+                story_parts.append("SELECTED PLOT THREADS TO FOCUS ON:\n")
+                story_parts.append("=" * 80 + "\n\n")
+                for plot in selected_plots:
+                    story_parts.append(f"Plot Thread: {plot.get('title', 'Untitled')}\n")
+                    story_parts.append(f"Type: {plot.get('type', 'Unknown')}\n")
+                    story_parts.append(f"Status: {plot.get('status', 'Unknown')}\n")
+                    if plot.get('description'):
+                        story_parts.append(f"Description: {plot.get('description', '')}\n")
+                    if plot.get('notes'):
+                        story_parts.append(f"Notes: {plot.get('notes', '')}\n")
+                    story_parts.append("\n")
+                story_parts.append("\n")
+        else:
+            # Include all plots if none selected
+            plots = load_json(PLOTS_FILE).get(project_id, [])
+            if plots:
+                story_parts.append("=" * 80 + "\n")
+                story_parts.append("PLOT THREADS IN THIS STORY:\n")
+                story_parts.append("=" * 80 + "\n\n")
+                for plot in plots:
+                    story_parts.append(f"Plot Thread: {plot.get('title', 'Untitled')}\n")
+                    story_parts.append(f"Type: {plot.get('type', 'Unknown')}\n")
+                    story_parts.append(f"Status: {plot.get('status', 'Unknown')}\n")
+                    if plot.get('description'):
+                        story_parts.append(f"Description: {plot.get('description', '')}\n")
+                    if plot.get('notes'):
+                        story_parts.append(f"Notes: {plot.get('notes', '')}\n")
+                    story_parts.append("\n")
+                story_parts.append("\n")
+        
+        # Build story text from chapters
+        all_chapters = project.get('chapters', [])
+        
+        if chapter_ids:
+            # Include only selected chapters
+            selected_chapters = [c for c in all_chapters if c.get('id') in chapter_ids]
+            story_parts.append(f"Selected Chapters: {len(selected_chapters)} of {len(all_chapters)}\n")
+            story_parts.append("=" * 80 + "\n")
+            story_parts.append("SELECTED CHAPTERS:\n")
+            story_parts.append("=" * 80 + "\n\n")
+            
+            for i, chapter in enumerate(selected_chapters, 1):
+                chapter_title = chapter.get('title', 'Untitled')
+                chapter_content = chapter.get('content', '')
+                story_parts.append(f"{'=' * 80}\n")
+                story_parts.append(f"CHAPTER {i} of {len(selected_chapters)}: {chapter_title}\n")
+                story_parts.append(f"{'=' * 80}\n\n")
+                story_parts.append(chapter_content)
+                story_parts.append(f"\n\n[END OF CHAPTER {i}]\n\n")
+        else:
+            # Include all chapters IN SERIALIZATION ORDER
+            story_parts.append(f"Total Chapters: {len(all_chapters)}\n")
+            story_parts.append("=" * 80 + "\n")
+            story_parts.append("READ ALL CHAPTERS IN THE ORDER PRESENTED BELOW (SERIALIZATION ORDER):\n")
+            story_parts.append("=" * 80 + "\n\n")
+            
+            for i, chapter in enumerate(all_chapters, 1):
+                chapter_title = chapter.get('title', 'Untitled')
+                chapter_content = chapter.get('content', '')
+                story_parts.append(f"{'=' * 80}\n")
+                story_parts.append(f"CHAPTER {i} of {len(all_chapters)}: {chapter_title}\n")
+                story_parts.append(f"{'=' * 80}\n\n")
+                story_parts.append(chapter_content)
+                story_parts.append(f"\n\n[END OF CHAPTER {i}]\n\n")
+        
+        return ''.join(story_parts)
+    except Exception as e:
+        print(f"Error building story context: {e}")
+        return ''
+
 # AI Suggestions
 @app.route('/api/ai-suggest', methods=['POST'])
 def ai_suggest():
@@ -496,45 +643,14 @@ def ai_suggest():
     suggestion_type = data.get('type', 'general')
     project_id = data.get('project_id', None)
     use_full_story = data.get('use_full_story', False)
+    character_ids = data.get('character_ids', None)
+    plot_ids = data.get('plot_ids', None)
     
-    # If use_full_story is True and project_id is provided, load full project context
+    # If project_id is provided, load project context (full story or selected chapters)
     full_story_context = ''
-    if use_full_story and project_id:
-        try:
-            projects = load_json(PROJECTS_FILE)
-            project = None
-            for p in projects:
-                if p['id'] == project_id:
-                    project = p
-                    break
-            
-            if project:
-                # Build full story text from all chapters IN SERIALIZATION ORDER
-                # Chapters are stored in the order they appear in the array (maintained by reorder function)
-                story_parts = []
-                story_parts.append(f"Story Title: {project.get('title', 'Untitled')}\n")
-                if project.get('description'):
-                    story_parts.append(f"Description: {project.get('description', '')}\n\n")
-                
-                # Read chapters in the exact order they appear in the array (serialization order)
-                chapters = project.get('chapters', [])
-                story_parts.append(f"Total Chapters: {len(chapters)}\n")
-                story_parts.append("=" * 80 + "\n")
-                story_parts.append("READ ALL CHAPTERS IN THE ORDER PRESENTED BELOW (SERIALIZATION ORDER):\n")
-                story_parts.append("=" * 80 + "\n\n")
-                
-                for i, chapter in enumerate(chapters, 1):
-                    chapter_title = chapter.get('title', 'Untitled')
-                    chapter_content = chapter.get('content', '')
-                    story_parts.append(f"{'=' * 80}\n")
-                    story_parts.append(f"CHAPTER {i} of {len(chapters)}: {chapter_title}\n")
-                    story_parts.append(f"{'=' * 80}\n\n")
-                    story_parts.append(chapter_content)
-                    story_parts.append(f"\n\n[END OF CHAPTER {i}]\n\n")
-                
-                full_story_context = ''.join(story_parts)
-        except Exception as e:
-            print(f"Error loading full story context: {e}")
+    chapter_ids = data.get('chapter_ids', None)
+    if project_id:
+        full_story_context = build_story_context(project_id, character_ids, plot_ids, chapter_ids)
     
     # Combine context
     combined_context = full_story_context + ('\n\nAdditional context: ' + context if context else '')
@@ -566,46 +682,17 @@ def ai_chat():
     use_full_story = data.get('use_full_story', False)
     conversation_history = data.get('conversation_history', [])
     openai_api_key = os.environ.get('OPENAI_API_KEY') or data.get('api_key')
+    character_ids = data.get('character_ids', None)
+    plot_ids = data.get('plot_ids', None)
     
     if not message:
         return jsonify({'error': 'Message is required'}), 400
     
-    # Get story context if needed
+    # Get story context (always include if project is selected)
     full_story_context = ''
-    if use_full_story and project_id:
-        try:
-            projects = load_json(PROJECTS_FILE)
-            project = None
-            for p in projects:
-                if p['id'] == project_id:
-                    project = p
-                    break
-            
-            if project:
-                # Build full story text from all chapters IN SERIALIZATION ORDER
-                story_parts = []
-                story_parts.append(f"Story Title: {project.get('title', 'Untitled')}\n")
-                if project.get('description'):
-                    story_parts.append(f"Description: {project.get('description', '')}\n\n")
-                
-                chapters = project.get('chapters', [])
-                story_parts.append(f"Total Chapters: {len(chapters)}\n")
-                story_parts.append("=" * 80 + "\n")
-                story_parts.append("READ ALL CHAPTERS IN THE ORDER PRESENTED BELOW (SERIALIZATION ORDER):\n")
-                story_parts.append("=" * 80 + "\n\n")
-                
-                for i, chapter in enumerate(chapters, 1):
-                    chapter_title = chapter.get('title', 'Untitled')
-                    chapter_content = chapter.get('content', '')
-                    story_parts.append(f"{'=' * 80}\n")
-                    story_parts.append(f"CHAPTER {i} of {len(chapters)}: {chapter_title}\n")
-                    story_parts.append(f"{'=' * 80}\n\n")
-                    story_parts.append(chapter_content)
-                    story_parts.append(f"\n\n[END OF CHAPTER {i}]\n\n")
-                
-                full_story_context = ''.join(story_parts)
-        except Exception as e:
-            print(f"Error loading full story context: {e}")
+    chapter_ids = data.get('chapter_ids', None)
+    if project_id:
+        full_story_context = build_story_context(project_id, character_ids, plot_ids, chapter_ids)
     
     # Try to use OpenAI if available
     if OPENAI_AVAILABLE and openai_api_key:
@@ -628,7 +715,6 @@ def get_openai_chat_response(message, story_context, conversation_history, api_k
     # Build system prompt
     system_prompt = """You are a creative writing assistant helping an author with their story. 
 You have access to their complete story (all chapters in serialization order).
-Be helpful, constructive, and specific. Reference specific chapters, characters, and plot points when relevant.
 If the story context is provided, use it to give context-aware responses."""
     
     # Build messages array
@@ -638,7 +724,7 @@ If the story context is provided, use it to give context-aware responses."""
     if story_context:
         messages.append({
             "role": "system", 
-            "content": f"STORY CONTEXT (read all chapters in order):\n\n{story_context[:40000]}"
+            "content": f"STORY CONTEXT (read all chapters in order):\n\n{story_context[:200000]}"
         })
     
     # Add conversation history (limit to last 10 messages to avoid token limits)
@@ -670,38 +756,26 @@ def get_openai_suggestions(context, suggestion_type, api_key):
     # Build prompt based on suggestion type
     prompts = {
         'plot': """You are a creative writing assistant helping with plot development. 
-Analyze the following story (read all chapters in order) and provide ONE comprehensive, detailed analysis with specific, actionable suggestions for plot development.
-Focus on: conflicts, pacing, plot twists, subplot development, and narrative structure.
-Be specific and reference elements from the story when possible. Reference specific chapters, characters, and plot points.""",
+Analyze the following story (read all chapters in order).
+Focus on: conflicts, pacing, plot twists, subplot development, and narrative structure.""",
         'character': """You are a creative writing assistant helping with character development.
-Analyze the following story (read all chapters in order) and provide ONE comprehensive, detailed analysis with specific, actionable suggestions for character development.
-Focus on: character growth, relationships, motivations, consistency, and depth.
-Reference specific characters, situations, and chapters from the story.""",
+Analyze the following story (read all chapters in order).
+Focus on: character growth, relationships, motivations, consistency, and depth.""",
         'dialogue': """You are a creative writing assistant helping with dialogue improvement.
-Analyze the following story (read all chapters in order) and provide ONE comprehensive, detailed analysis with specific, actionable suggestions for improving dialogue.
-Focus on: natural speech patterns, subtext, character voice, conflict in dialogue, and showing emotion.
-Reference specific dialogue examples and chapters from the story when possible.""",
+Analyze the following story (read all chapters in order).
+Focus on: natural speech patterns, subtext, character voice, conflict in dialogue, and showing emotion.""",
         'general': """You are a creative writing assistant providing general writing advice.
-Analyze the following story (read all chapters in order) and provide ONE comprehensive, detailed analysis with specific, actionable writing suggestions.
-Focus on: style, pacing, description, show vs tell, and overall narrative quality.
-Be constructive and reference specific parts of the story, including chapter numbers."""
+Analyze the following story (read all chapters in order).
+Focus on: style, pacing, description, show vs tell, and overall narrative quality."""
     }
     
     system_prompt = prompts.get(suggestion_type, prompts['general'])
     
     user_prompt = f"""Please carefully read and analyze this complete story (all chapters are provided in serialization order):
 
-{context[:50000]}  # Increased limit to allow more context
+{context[:200000]}  # Increased limit to allow more context
 
-IMPORTANT: Read all chapters in the order they are presented. The chapters are numbered and appear in serialization order.
-
-Provide ONE comprehensive, detailed analysis with:
-- A clear, descriptive title summarizing your main insight
-- A detailed description explaining your analysis and suggestions
-- Specific references to chapters, characters, and plot points from the story
-- Actionable recommendations for improvement
-
-Format your response as a single, cohesive analysis (not a list of separate suggestions)."""
+IMPORTANT: Read all chapters in the order they are presented. The chapters are numbered and appear in serialization order."""
     
     try:
         response = client.chat.completions.create(
