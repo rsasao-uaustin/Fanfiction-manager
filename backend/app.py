@@ -33,7 +33,19 @@ except ImportError:
     print("Note: OpenAI library not available. AI suggestions will use template-based system.")
 
 app = Flask(__name__)
-CORS(app)
+# CORS configuration - allow production domain and localhost for development
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://fimanage.com",
+            "https://www.fimanage.com",
+            "http://localhost:5000",
+            "http://127.0.0.1:5000"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Initialize grammar checker
 tool = None
@@ -1020,4 +1032,8 @@ def extract_text_from_doc(content_elements):
     return ''.join(text_parts)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Production: use PORT from environment variable (Railway sets this)
+    # Development: default to port 5000
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
